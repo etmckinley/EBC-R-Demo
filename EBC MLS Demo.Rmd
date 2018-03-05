@@ -1,0 +1,317 @@
+---
+title: "EBC MLS R Demo"
+output: html_notebook
+author: Eliot McKinley
+date: 2018-03-09
+---
+
+This R Notebook introduces and gives examples of basic data analysis in R. The example data set is statistics from the 2017 Major League Soccer season derived from www.americansocceranalysis.com and attendance data scraped from Wikipedia.
+
+A few references:
+https://www.rstudio.com/wp-content/uploads/2016/10/r-cheat-sheet-3.pdf
+https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf
+https://www.rstudio.com/wp-content/uploads/2015/08/ggplot2-cheatsheet.pdf
+https://www.statmethods.net/stats/index.html
+https://data.bits.vib.be/pub/trainingen/RIntro/slides.pdf
+
+Load Data and inspect
+```{r}
+player.data=read.csv('MLS 2017.csv')
+head(player.data)
+summary(player.data)
+
+#To access columns in data frame use $
+Players=player.data$Player
+head(as.character(Players))
+```
+
+Getting Frequencies
+```{r}
+table(player.data$Pos,player.data$Goals)
+```
+
+Plotting using base graphics. Good for quick looks at data, but not recommended for publication quality plots.
+```{r}
+plot(player.data$Goals~player.data$Shots)
+plot(player.data$Goals~player.data$Pos)
+```
+
+The ggplot2 package allows for much prettier graphs that are more suitable for publication quality figures.
+```{r}
+library(ggplot2) #load the library functions
+ggplot(player.data, aes(x=Shots, y=Goals))+
+  geom_point()
+
+ggplot(player.data, aes(x=Pos, y=Goals))+
+  geom_boxplot()
+
+```
+
+ggplot2 allows control of almost all aspects of the plot.
+```{r}
+#load the library functions
+library(ggplot2) 
+
+#change the color of the boxplots
+ggplot(player.data, aes(x=Pos, y=Goals, fill=Pos))+ 
+  geom_boxplot()
+
+#reorder the x axis
+ggplot(player.data, aes(x=Pos, y=Goals, color=Pos))+ 
+  geom_boxplot()+scale_x_discrete(limits= c('GK','D','M','F')) 
+
+#Bar graph with dots and error bars
+ggplot(player.data, aes(x=Pos, y=Goals, fill=Pos))+ 
+  geom_bar(stat = "summary", fun.y = "mean")+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)+
+  geom_jitter(height=0, width=.3)+
+  scale_x_discrete(limits= c('GK','D','M','F')) 
+
+#Violin plot
+ggplot(player.data, aes(x=Pos, y=Goals, fill=Pos))+ 
+  geom_violin()+
+  scale_x_discrete(limits= c('GK','D','M','F')) 
+
+#Prism-like dot plot
+ggplot(subset(player.data,Goals>5), aes(x=Pos, y=Goals))+
+  geom_dotplot(binaxis = "y", stackdir = "center")+
+  stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, 
+                         geom="crossbar", width=0.7)
+
+ggplot(subset(player.data,Goals>5), aes(x=Pos, y=Shots))+
+  geom_jitter(width=.1, size=3)+
+  stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, 
+                         geom="crossbar", width=0.7)
+
+
+#histogram
+ggplot(player.data, aes(Goals))+
+  geom_histogram(breaks=seq(0,25, by = 1))
+
+```
+
+Using ggplot with time series data
+```{r}
+#Load in time series data
+team.attendance=read.csv('MLS.attendance.csv')
+names(team.attendance)=gsub('X','',names(team.attendance)) #modify names to get dates
+library(reshape2)
+team.attendance=melt(team.attendance, by=c('Team','Primary')) #reshape so in tidy format
+names(team.attendance)[3:4]=c('Year', 'Attendance')
+team.attendance$Year=as.numeric(as.character(team.attendance$Year)) #convert year to number
+team.attendance=na.omit(team.attendance)
+team.attendance=team.attendance[order(team.attendance$Team),]
+
+#Plot lines of time series data
+ggplot(team.attendance, aes(x=Year, y=Attendance))+
+  geom_line(aes(group=Team))
+
+#Color the lines
+ggplot(team.attendance, aes(x=Year, y=Attendance))+
+  geom_line(aes(group=Team, color=Team))+
+  geom_point(aes(color=Team), size=.5)+
+  scale_color_manual(values=as.character(unique(team.attendance$Primary)))
+
+#Bar plots
+ggplot(team.attendance, aes(x=Team, y=Attendance))+
+  geom_bar(aes(group=Team, fill=Team), stat = "summary", fun.y = "mean")+
+  scale_fill_manual(values=as.character(unique(team.attendance$Primary)))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)
+```
+
+Changing elements of the theme allows for more customization
+```{r}  
+# Modify X axis Labels
+ggplot(team.attendance, aes(x=Team, y=Attendance))+
+  geom_bar(aes(group=Team, fill=Team), stat = "summary", fun.y = "mean")+
+  scale_fill_manual(values=as.character(unique(team.attendance$Primary)))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)+
+  theme(axis.text.x = (element_text(size=14,angle=45, hjust=1, vjust=1)))
+
+library(ggthemes)
+
+#The Economist
+ggplot(team.attendance, aes(x=Team, y=Attendance))+
+  geom_bar(aes(group=Team, fill=Team), stat = "summary", fun.y = "mean")+
+  scale_fill_manual(values=as.character(unique(team.attendance$Primary)))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)+
+  theme_economist()+
+  theme(axis.text.x = (element_text(size=14,angle=45, hjust=1, vjust=1)))
+  
+
+#Five Thirty Eight
+ggplot(team.attendance, aes(x=Team, y=Attendance))+
+  geom_bar(aes(group=Team, fill=Team), stat = "summary", fun.y = "mean")+
+  scale_fill_manual(values=as.character(unique(team.attendance$Primary)))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)+
+  theme_fivethirtyeight()+
+  theme(axis.text.x = (element_text(size=14,angle=45, hjust=1, vjust=1)))
+
+#Excel
+ggplot(team.attendance, aes(x=Team, y=Attendance))+
+  geom_bar(aes(group=Team, fill=Team), stat = "summary", fun.y = "mean")+
+  scale_fill_manual(values=as.character(unique(team.attendance$Primary)))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)+
+  theme_excel()+
+  theme(axis.text.x = (element_text(size=14,angle=45, hjust=1, vjust=1)))
+
+#Minimal
+ggplot(team.attendance, aes(x=Team, y=Attendance))+
+  geom_bar(aes(group=Team, fill=Team), stat = "summary", fun.y = "mean")+
+  scale_fill_manual(values=as.character(unique(team.attendance$Primary)))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)+
+  theme_minimal()+
+  theme(axis.text.x = (element_text(size=14,angle=45, hjust=1, vjust=1)))+
+  labs(title='Attendance: 1996-2017', y='Announced Attendance', x='Franchise')
+
+
+
+#Minimal- plus reorder based upon attendance
+
+team.attendance$Team=factor(team.attendance$Team, levels=levels(reorder(team.attendance$Team, -team.attendance$Attendance,mean)))
+ggplot(team.attendance, aes(x=Team, y=Attendance))+
+  geom_bar(aes(group=Team, fill=Team), stat = "summary", fun.y = "mean")+
+  scale_fill_manual(values=levels(reorder(team.attendance$Primary,-team.attendance$Attendance, mean)))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=.1)+
+  theme_minimal()+
+  theme(axis.text.x = (element_text(size=14,angle=45, hjust=1, vjust=1)))+
+  labs(title='Attendance: 1996-2017', y='Announced Attendance', x='Franchise')+
+  theme(legend.position = "none")
+```
+
+Basic Statistical Tests
+Check out the ggpubr package: http://www.sthda.com/english/rpkgs/ggpubr/
+```{r}
+Teams=subset(team.attendance, Team %in% c('CLB','CHI'))
+ggplot(Teams, aes(x=Team, y=Attendance))+geom_point()+stat_summary(fun.data = mean_se, geom = "crossbar", width=.1, color="red")
+
+t.test(Teams$Attendance~Teams$Team)
+wilcox.test(Teams$Attendance~Teams$Team)
+
+library(ggpubr)
+ggplot(Teams, aes(x=Team, y=Attendance))+geom_point()+
+  stat_summary(fun.data = mean_se, geom = "crossbar", width=.1, color="red")+
+  stat_compare_means()+
+  scale_y_continuous(limits=c(10000,20000))
+
+Teams=subset(team.attendance, Team %in% c('CLB','CHI') & Year > 1998)
+wilcox.test(Teams$Attendance~Teams$Team, paired=TRUE)
+ggpaired(Teams, x = "Team", y = "Attendance",
+                color = "Team", palette ='jco',
+                add = "jitter", shape = "Team",
+         line.color = "gray")+
+  stat_compare_means(comparisons=list(c('CLB','CHI')), paired=TRUE)
+
+
+Teams=subset(team.attendance, Team %in% c('CLB','COL','DCU','FCD','LAG','NER','NYRB','SJE','SKC'))
+ggplot(Teams, aes(x=Team, y=Attendance))+
+  geom_jitter(width=.1)+
+  stat_summary(fun.data = mean_se, geom = "crossbar", width=.2, color="red")+
+  stat_compare_means(label = "p.signif", comparisons=list(c('NYRB','COL'),c('NER','DCU'),c('SKC','CLB')))+
+  stat_compare_means(method='anova', label.y=10000)+
+  theme_minimal()
+
+
+ggboxplot(Teams, x='Team', y='Attendance', color='Team', add='jitter', legend='none')+
+  geom_hline(yintercept = mean(Teams$Attendance), linetype = 2)+
+  stat_compare_means(method = "anova", label.y = 10000)+
+  stat_compare_means(label = "p.signif", method = "wilcox.test",
+                     ref.group = ".all.", label.y=30000) 
+
+ggboxplot(Teams, x='Team', y='Attendance', color='Team', add='jitter', legend='none')+
+  geom_hline(yintercept = mean(Teams$Attendance), linetype = 2)+
+  stat_compare_means(method = "anova", label.y = 10000)+
+  stat_compare_means(label = "p.signif", method = "wilcox.test",
+                     ref.group = "CLB", hide.ns=TRUE, label.y=30000) 
+
+anov=aov(Teams$Attendance~Teams$Team)
+
+summary(anov)
+TukeyHSD(anov)
+
+```
+Correlations
+```{r}
+ggplot(Teams, aes(x=Year, y=Attendance))+geom_point()
+
+cor.test(Teams$Attendance,Teams$Year, use="complete.obs")
+
+library(ggpmisc)
+formula = y ~ x
+
+ggplot(Teams, aes(x=Year, y=Attendance))+geom_point(aes(color=Team))+
+  scale_color_manual(values=as.character(unique(team.attendance$Primary)))+
+  geom_smooth(method = "lm", se=FALSE)+
+  stat_poly_eq(aes(label = paste(..eq.label..,..rr.label.., sep = "~~~")), 
+               label.x.npc = "left", label.y.npc = 0.9,
+               formula = formula, parse = TRUE, size = 5)+
+  theme_minimal()
+```
+
+Principal Components Analysis see: https://www.r-bloggers.com/principal-component-analysis-in-r/
+```{r}
+#clean up data for PCA
+PCA.data=na.omit(player.data)
+player.PCA=prcomp(PCA.data[,-c(1:3,32:34)])
+PCA.data=data.frame(PCA.data,player.PCA$x)
+
+ggplot(PCA.data, aes(x=PC1, y=PC2, color=Pos))+
+  geom_point()+
+  theme_minimal()
+
+```
+
+tSNE see: https://distill.pub/2016/misread-tsne/
+```{r}
+
+library(Rtsne)
+
+tSNE.data=na.omit(player.data)
+set.seed(42)
+tSNE=Rtsne(as.matrix(tSNE.data[,c(4:31,35)]), perplexity=5,pca_center = TRUE, pca_scale = TRUE, verbose = TRUE)
+
+tSNE.data$tSNE1=tSNE$Y[,1]
+tSNE.data$tSNE2=tSNE$Y[,2]
+
+ggplot(tSNE.data, aes(x=tSNE1, y=tSNE2, color=Pos))+
+  geom_point()+
+  theme_minimal()
+
+#Uncomment these lines to install the MxIF package
+#library(devtools)
+#install_github('etmckinley/MxIF')
+library(MxIF)
+
+MxIF.tsne.plot(tSNE.data,8)+labs(title='Goals')
+
+```
+
+
+
+Hierarchical Clustering see: https://www.stat.berkeley.edu/~s133/Cluster2a.html
+```{r}
+clust.data=na.omit(player.data) #remove NAs in data
+clust.data=subset(clust.data, Min>2300)
+hclust.data=clust.data[,-c(1:3,32:34)] #remove non numeric variables
+rownames(hclust.data)=clust.data$Player
+
+#standardize the data
+medians=apply(hclust.data,2,median) #apply the median function to each column (2), or doing rows, apply(clust.data,1,median)
+mads=apply(hclust.data,2,mad)
+hclust.data=scale(hclust.data, center=medians, scale=mads)
+
+#create distance matrix
+hclust.dist=dist(hclust.data)
+
+hclust.data=hclust(hclust.dist)
+
+plot(hclust.data, cex=0.5)
+
+library(ggdendro)
+
+p=ggdendrogram(hclust.data, rotate=TRUE, size=0.3)+labs(title='Hierachical Clustering, Min>2300')
+p
+
+p=ggsave('player_dendro.png', plot=p, height=12, width=5)
+
+```
