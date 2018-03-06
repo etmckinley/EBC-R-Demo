@@ -14,6 +14,21 @@ https://www.rstudio.com/wp-content/uploads/2015/08/ggplot2-cheatsheet.pdf
 https://www.statmethods.net/stats/index.html
 https://data.bits.vib.be/pub/trainingen/RIntro/slides.pdf
 
+Make sure packages are installed
+```{r}
+packages = c("ggplot2", "reshape2", "ggthemes", "ggpubr", "ggpmisc", "Rtsne", "ggdendro","ggsci", "survminer", "survival","devtools")
+if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+  install.packages(setdiff(packages, rownames(installed.packages())))  
+}
+packages="MxIF"
+if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+  #Uncomment these lines to install the MxIF package
+  library(devtools)
+  install_github('etmckinley/MxIF')
+}
+
+```
+
 Load Data and inspect
 ```{r}
 player.data=read.csv('MLS 2017.csv')
@@ -35,6 +50,7 @@ Plotting using base graphics. Good for quick looks at data, but not recommended 
 plot(player.data$Goals~player.data$Shots)
 plot(player.data$Goals~player.data$Pos)
 ```
+
 
 The ggplot2 package allows for much prettier graphs that are more suitable for publication quality figures.
 ```{r}
@@ -277,9 +293,6 @@ ggplot(tSNE.data, aes(x=tSNE1, y=tSNE2, color=Pos))+
   geom_point()+
   theme_minimal()
 
-#Uncomment these lines to install the MxIF package
-#library(devtools)
-#install_github('etmckinley/MxIF')
 library(MxIF)
 
 MxIF.tsne.plot(tSNE.data,8)+labs(title='Goals')
