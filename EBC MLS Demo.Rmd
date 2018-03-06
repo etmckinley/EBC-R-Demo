@@ -317,3 +317,41 @@ p
 p=ggsave('player_dendro.png', plot=p, height=12, width=5)
 
 ```
+
+Survival see: hhttp://www.sthda.com/english/rpkgs/survminer/
+```{r}
+library(ggsci)
+library(survminer)
+library(survival) #gets the colon data set
+?colon
+
+#fit the survival curves
+surv.fit=survfit(Surv(time, status)~sex, data=colon)
+ggsurvplot(surv.fit, data=colon)
+
+
+surv.fit=survfit(Surv(time,status)~age>45, data=colon)
+ggsurvplot(surv.fit, data=colon, 
+           palette = c("#00AFBB", "#E7B800"),
+           conf.int=TRUE,
+           pval=TRUE,
+           legend.labs = c("<45", ">45"),
+           risk.table = TRUE,        # Add risk table
+          risk.table.col = "strata",
+          risk.table.height = 0.25)
+
+
+
+surv.fit=survfit(Surv(time, status)~rx, data=colon)
+
+ggsurvplot(surv.fit, data=colon)
+
+ggsurvplot(surv.fit, data=colon,
+           palette =get_palette("jco",3), 
+           conf.int=TRUE,
+           pval=TRUE,
+           ggtheme = theme_minimal(),
+           censor.shape="x"
+           )
+
+```
