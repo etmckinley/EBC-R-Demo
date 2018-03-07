@@ -14,6 +14,8 @@ https://www.rstudio.com/wp-content/uploads/2015/08/ggplot2-cheatsheet.pdf
 https://www.statmethods.net/stats/index.html
 https://data.bits.vib.be/pub/trainingen/RIntro/slides.pdf
 
+FCrStats: https://github.com/FCrSTATS
+
 Make sure packages are installed
 ```{r}
 packages = c("ggplot2", "reshape2", "ggthemes", "ggpubr", "ggpmisc", "Rtsne", "ggdendro","ggsci", "survminer", "survival","devtools")
@@ -300,6 +302,29 @@ MxIF.tsne.plot(tSNE.data,8)+labs(title='Goals')
 MxIF.tsne.animate(tSNE.data, 4:31, 'animated_gif.gif')
 
 ```
+
+K means
+```{r}
+clust.data=na.omit(tSNE.data) #remove NAs in data
+kclust.data=clust.data[,-c(1:3,32:34)] #remove non numeric variables
+rownames(kclust.data)=clust.data$Player
+
+#standardize the data
+medians=apply(kclust.data,2,median) #apply the median function to each column (2), or doing rows, apply(clust.data,1,median)
+mads=apply(kclust.data,2,mad)
+kclust.data=scale(kclust.data, center=medians, scale=mads)
+
+#run k means
+kmeans.clusters=kmeans(kclust.data, 6)
+
+clust.data$kCluster=as.character(kmeans.clusters$cluster)
+
+ggplot(clust.data, aes(x=tSNE1, y=tSNE2, color=kCluster))+
+  geom_point()+
+  theme_minimal()
+
+```
+
 
 
 
