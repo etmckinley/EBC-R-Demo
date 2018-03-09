@@ -299,7 +299,7 @@ library(MxIF)
 
 MxIF.tsne.plot(tSNE.data,8)+labs(title='Goals')
 
-MxIF.tsne.animate(tSNE.data, 4:31, 'animated_gif.gif')
+MxIF.tsne.animate(tSNE.data, 10:15, 'animated_gif.gif')
 
 ```
 
